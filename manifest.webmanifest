@@ -1,6 +1,6 @@
 {
- "name": "Berlinfahrt",
- "short_name": "Berlin",
+ "name": "RvWG goes to Berlin",
+ "short_name": "RvWG Berlin",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",
