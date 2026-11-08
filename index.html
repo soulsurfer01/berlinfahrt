@@ -416,10 +416,12 @@ document.querySelectorAll('[data-copy]').forEach(function(b){
   });
 });
 (function(){
-  var n=new Date(), s=new Date(2026,10,9,7,25), diff=Math.ceil((s-n)/86400000);
+  var n=new Date(), s=new Date(2026,10,9,7,25);
+  var diff=Math.round((new Date(2026,10,9)-new Date(n.getFullYear(),n.getMonth(),n.getDate()))/86400000);
   var c=document.getElementById('count');
   if(diff>1)c.textContent='Noch '+diff+' Tage bis Abfahrt';
   else if(diff===1)c.textContent='Morgen geht es los';
+  else if(diff===0&&n<s)c.textContent='Heute geht es los';
   else if(n<=new Date(2026,10,13,23,59))c.textContent='Gerade in Berlin';
   else c.textContent='Wieder zu Hause';
   var g=ls('bf_group'); if(g==='A'||g==='B')G=g;
