@@ -185,7 +185,7 @@ tr:last-child td{border-bottom:0}
   <div class="box glass">
     <h3>Wetter Berlin</h3>
     <table id="wxTable"></table>
-    <p class="mute" style="margin-top:8px">Prognose vom 07.11.2026, gilt nur für diesen Stand. Die App zeigt kein Live-Wetter, es kann sich noch ändern.</p>
+    <p class="mute" id="wxNote" style="margin-top:8px"></p>
   </div>
   <div class="box glass">
     <h3>Unterkunft</h3>
@@ -274,8 +274,8 @@ tr:last-child td{border-bottom:0}
 
 <script>
 var G='A';
-/* Wetter: Prognose-Stand 07.11.2026 (Berlin Friedrichshain), keine Live-Daten */
-var WX=[{lo:1,hi:5,r:10},{lo:1,hi:5,r:5},{lo:2,hi:9,r:45},{lo:5,hi:12,r:55},{lo:3,hi:8,r:10}];
+/* Wetter: Rückfallwerte, Prognose-Stand 08.11.2026 (Berlin Friedrichshain) */
+var WX=[{lo:0,hi:3,r:10},{lo:1,hi:4,r:15},{lo:1,hi:7,r:45},{lo:3,hi:8,r:20},{lo:3,hi:8,r:0}];
 var DAYS=[
 {k:'Mo',d:'09.11.',n:'Montag',ev:[
  {t:'7:25',h:'Treffpunkt Bahnhof Baiersbronn',p:'Pünktlich! Deutschland-Ticket und Ausweis dabei, Vesper für die Zugfahrt.',key:1},
@@ -324,7 +324,7 @@ var BRIEF=[
 ];
 var EXTRA=[
  ['lade','Handy, Ladekabel, Powerbank'],
- ['regen','Regenjacke und feste Schuhe','Viel Laufen in Berlin, Mittwoch und Donnerstag mit Regenrisiko.'],
+ ['regen','Regenjacke und feste Schuhe','Viel Laufen in Berlin, am Mittwoch ist Regen möglich.'],
  ['med','Eigene Medikamente'],
  ['hygiene','Waschzeug und Handtuch']
 ];
@@ -627,6 +627,30 @@ document.querySelectorAll('[data-copy]').forEach(function(b){
   el.addEventListener('click',function(e){var t=e.target.closest('button');if(t)tap(parseInt(t.getAttribute('data-i'),10))});
   document.getElementById('mNew').addEventListener('click',init);
   init();
+})();
+
+/* Wetter live (Open-Meteo), Rückfall: gespeicherter oder eingebauter Stand */
+function pad2(n){return (n<10?'0':'')+n}
+function wxNote(t){var e=document.getElementById('wxNote');if(e)e.textContent=t}
+(function(){
+  var cached=null;
+  try{cached=JSON.parse(ls('bf_wx')||'null')}catch(e){}
+  if(cached&&cached.wx&&cached.wx.length===5){WX=cached.wx;wxNote('Zuletzt aktualisiert: '+cached.when+'. Ohne Netz bleibt dieser Stand.');renderDay();renderWx()}
+  else wxNote('Prognose-Stand 08.11.2026. Mit Netz wird sie beim Öffnen aktualisiert.');
+  var URL_='https://api.open-meteo.com/v1/forecast?latitude=52.51&longitude=13.43&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Europe%2FBerlin&start_date=2026-11-09&end_date=2026-11-13';
+  var ctl=window.AbortController?new AbortController():null;
+  var tm=setTimeout(function(){if(ctl)ctl.abort()},8000);
+  fetch(URL_,ctl?{signal:ctl.signal}:{}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){
+    var d=j&&j.daily;if(!d||!d.time||d.time.length!==5)throw 0;
+    var wx=d.time.map(function(t,i){
+      var lo=Math.round(d.temperature_2m_min[i]),hi=Math.round(d.temperature_2m_max[i]),r=Math.round(d.precipitation_probability_max[i]);
+      if(!isFinite(lo)||!isFinite(hi))throw 0;
+      return {lo:lo,hi:hi,r:isFinite(r)?r:0};
+    });
+    var n=new Date(),when=pad2(n.getDate())+'.'+pad2(n.getMonth()+1)+'. '+pad2(n.getHours())+':'+pad2(n.getMinutes())+' Uhr';
+    WX=wx;ls('bf_wx',JSON.stringify({wx:wx,when:when}));
+    wxNote('Live aktualisiert: '+when+'.');renderDay();renderWx();
+  }).catch(function(){}).then(function(){clearTimeout(tm)});
 })();
 
 </script>
